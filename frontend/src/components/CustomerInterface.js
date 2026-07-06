@@ -33,8 +33,11 @@ import {
 } from "react-icons/fa";
 import "./CustomerInterface.css";
 
+require('dotenv').config();
+
 const API_URL = process.env.APP_API_URL || "http://localhost:5000/api";
 const socket = io(process.env.APP_BACKEND_URL || "http://localhost:5000");
+
 
 function CustomerInterface() {
   const [formData, setFormData] = useState({
