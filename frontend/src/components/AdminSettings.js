@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { FiUser, FiMail, FiLock, FiSave, FiX, FiEye, FiEyeOff } from 'react-icons/fi';
 import './AdminSettings.css';
 
-const API_URL = 'http://localhost:5000/api';
+const API_URL = process.env.APP_API_URL || 'http://localhost:5000/api';
 
 function AdminSettings({ onClose }) {
   const [profile, setProfile] = useState({

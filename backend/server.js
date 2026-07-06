@@ -42,6 +42,8 @@ app.set('io', io);
 app.use('/api/queue', queueRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/auth', authRoutes);
+
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
