@@ -3,9 +3,10 @@ import axios from 'axios';
 import toast from 'react-hot-toast';
 import { FiUser, FiMail, FiLock, FiSave, FiX, FiEye, FiEyeOff } from 'react-icons/fi';
 import './AdminSettings.css';
+import { io } from "socket.io-client";
 
-const API_URL = "https://honeydew-mantis-788783.hostingersite.com/api";
-const BACKEND_URL = "https://honeydew-mantis-788783.hostingersite.com";
+const API_URL = process.env.REACT_APP_API_URL;
+const socket = io(process.env.REACT_APP_BACKEND_URL);
 
 function AdminSettings({ onClose }) {
   const [profile, setProfile] = useState({

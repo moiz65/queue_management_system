@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 import { FiUser, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 import './AdminLogin.css';
 
-const API_URL = "https://honeydew-mantis-788783.hostingersite.com/api";
+const API_URL = process.env.REACT_APP_API_URL;
 
 function AdminLogin({ onLogin }) {
   const [credentials, setCredentials] = useState({

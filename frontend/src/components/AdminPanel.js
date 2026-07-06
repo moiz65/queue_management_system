@@ -60,8 +60,8 @@ import { FaUsers, FaCrown, FaRegClock } from "react-icons/fa";
 import AdminSettings from "./AdminSettings";
 import "./AdminPanel.css";
 
-const API_URL = "https://honeydew-mantis-788783.hostingersite.com/api";
-const socket = io("https://honeydew-mantis-788783.hostingersite.com");
+const API_URL = process.env.REACT_APP_API_URL;
+const socket = io(process.env.REACT_APP_BACKEND_URL);
 
 function AdminPanel() {
   const navigate = useNavigate();

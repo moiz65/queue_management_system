@@ -19,8 +19,8 @@ import {
 import { FaUsers } from "react-icons/fa";
 import "./CustomerDisplay.css";
 
-const API_URL = "https://honeydew-mantis-788783.hostingersite.com/api";
-const socket = io("https://honeydew-mantis-788783.hostingersite.com");
+const API_URL = process.env.REACT_APP_API_URL;
+const socket = io(process.env.REACT_APP_BACKEND_URL);
 
 function CustomerDisplay() {
   const [queueData, setQueueData] = useState(null);
