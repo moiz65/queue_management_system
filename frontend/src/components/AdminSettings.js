@@ -4,8 +4,6 @@ import toast from 'react-hot-toast';
 import { FiUser, FiMail, FiLock, FiSave, FiX, FiEye, FiEyeOff } from 'react-icons/fi';
 import './AdminSettings.css';
 
-require('dotenv').config();
-
 const API_URL = process.env.APP_API_URL || 'http://localhost:5000/api';
 const BACKEND_URL = process.env.APP_BACKEND_URL || 'http://localhost:5000';
 

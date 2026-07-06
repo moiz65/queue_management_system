@@ -5,8 +5,6 @@ import toast from 'react-hot-toast';
 import { FiUser, FiLock, FiEye, FiEyeOff } from 'react-icons/fi';
 import './AdminLogin.css';
 
-require('dotenv').config();
-
 const API_URL = process.env.APP_API_URL || 'http://localhost:5000/api';
 
 function AdminLogin({ onLogin }) {
