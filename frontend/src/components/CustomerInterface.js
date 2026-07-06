@@ -33,8 +33,8 @@ import {
 } from "react-icons/fa";
 import "./CustomerInterface.css";
 
-const API_URL = process.env.APP_API_URL || "http://localhost:5000/api";
-const socket = io(process.env.APP_BACKEND_URL || "http://localhost:5000");
+const API_URL = process.env.APP_API_URL;
+const socket = io(process.env.APP_BACKEND_URL);
 
 
 function CustomerInterface() {
