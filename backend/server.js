@@ -16,6 +16,7 @@ const io = socketIo(server, {
     origin: [
       "http://localhost:3000",
       "http://localhost:3001",
+      "https://queue-management-system-dun-tau.vercel.app",
     ],
     methods: ["GET", "POST"]
   }
