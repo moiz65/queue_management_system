@@ -4,8 +4,8 @@ import toast from 'react-hot-toast';
 import { FiUser, FiMail, FiLock, FiSave, FiX, FiEye, FiEyeOff } from 'react-icons/fi';
 import './AdminSettings.css';
 
-const API_URL = process.env.APP_API_URL;
-const BACKEND_URL = process.env.APP_BACKEND_URL;
+const API_URL = "https://honeydew-mantis-788783.hostingersite.com/api";
+const BACKEND_URL = "https://honeydew-mantis-788783.hostingersite.com";
 
 function AdminSettings({ onClose }) {
   const [profile, setProfile] = useState({

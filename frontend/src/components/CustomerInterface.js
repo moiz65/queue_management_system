@@ -33,8 +33,8 @@ import {
 } from "react-icons/fa";
 import "./CustomerInterface.css";
 
-const API_URL = process.env.APP_API_URL;
-const socket = io(process.env.APP_BACKEND_URL);
+const API_URL = "https://honeydew-mantis-788783.hostingersite.com/api";
+const socket = io("https://honeydew-mantis-788783.hostingersite.com");
 
 
 function CustomerInterface() {
