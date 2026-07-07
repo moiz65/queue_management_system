@@ -2,14 +2,17 @@ const express = require('express');
 const router = express.Router();
 const CustomerController = require('../controllers/customerController');
 
+// Check if customer exists by phone or email
+router.get('/check', CustomerController.checkCustomer);
+
 // Get all customers
 router.get('/', CustomerController.getAllCustomers);
 
+// Get customer with history (MUST come before /:id)
+router.get('/:id/history', CustomerController.getCustomerWithHistory);
+
 // Get customer by ID
 router.get('/:id', CustomerController.getCustomerById);
-
-// Get customer by email
-router.get('/email/:email', CustomerController.getCustomerByEmail);
 
 // Create customer
 router.post('/', CustomerController.createCustomer);
@@ -19,11 +22,5 @@ router.put('/:id', CustomerController.updateCustomer);
 
 // Delete customer
 router.delete('/:id', CustomerController.deleteCustomer);
-
-// Get customer queue history
-router.get('/:id/history', CustomerController.getCustomerHistory);
-
-// Get customer stats
-router.get('/:id/stats', CustomerController.getCustomerStats);
 
 module.exports = router;

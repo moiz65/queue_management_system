@@ -1,28 +1,98 @@
+const db = require('../database/db');
 const QueueModel = require('../models/queueModel');
 
 class QueueController {
-  // Add to queue
+  // Add to queue - Complete flow
   static async addToQueue(req, res) {
     try {
-      const { name, email, phone, party_size } = req.body;
+      const { name, email, phone, party_size = 1, customerId } = req.body;
       
-      if (!name || !email || !phone) {
-        return res.status(400).json({ error: 'Name, email, and phone are required' });
+      console.log('📝 Add to queue request:', { name, email, phone, party_size, customerId });
+      
+      let finalCustomerId = customerId;
+      let isNewCustomer = false;
+      
+      // Step 1: If customerId not provided, check by phone
+      if (!finalCustomerId) {
+        // Check if customer exists by phone
+        const [existing] = await db.query(
+          'SELECT id, name, email, phone FROM customers WHERE phone = ?',
+          [phone]
+        );
+        
+        if (existing.length > 0) {
+          // Existing customer
+          finalCustomerId = existing[0].id;
+          console.log('✅ Existing customer found:', finalCustomerId);
+        } else {
+          // New customer - create
+          console.log('🆕 Creating new customer...');
+          const [result] = await db.query(
+            'INSERT INTO customers (name, email, phone, party_size) VALUES (?, ?, ?, ?)',
+            [name, email, phone, party_size]
+          );
+          finalCustomerId = result.insertId;
+          isNewCustomer = true;
+          console.log('✅ New customer created:', finalCustomerId);
+        }
       }
       
-      const result = await QueueModel.addToQueue(req.body);
+      // Step 2: Add to queue
+      const [avgTimeResult] = await db.query(
+        'SELECT setting_value FROM settings WHERE setting_key = ?',
+        ['average_service_time']
+      );
+      const avgServiceTime = parseInt(avgTimeResult[0]?.setting_value || 15);
       
-      // Emit socket event for real-time update
+      const [waitingCount] = await db.query(
+        'SELECT COUNT(*) as count FROM queue WHERE status = ?',
+        ['waiting']
+      );
+      
+      const estimatedWaitTime = (waitingCount[0].count + 1) * avgServiceTime;
+      
+      const [queueResult] = await db.query(
+        `INSERT INTO queue (customer_id, estimated_wait_time, check_in_time) 
+         VALUES (?, ?, NOW())`,
+        [finalCustomerId, estimatedWaitTime]
+      );
+      
+      // Get token number and position
+      const [tokenResult] = await db.query(
+        'SELECT token_number FROM queue WHERE id = ?',
+        [queueResult.insertId]
+      );
+      
+      const [positionResult] = await db.query(
+        `SELECT COUNT(*) + 1 as position 
+         FROM queue 
+         WHERE status = 'waiting' 
+         AND check_in_time <= (SELECT check_in_time FROM queue WHERE id = ?)`,
+        [queueResult.insertId]
+      );
+      
+      // Emit socket event
       const io = req.app.get('io');
       if (io) {
         const queueStatus = await QueueModel.getQueueStatus();
         io.emit('queueUpdated', queueStatus);
       }
       
+      const message = isNewCustomer ? 
+        `Added to queue with token #${tokenResult[0].token_number}` :
+        `Added to queue with token #${tokenResult[0].token_number}`;
+      
       res.status(201).json({
         success: true,
-        data: result,
-        message: `Added to queue with token #${result.tokenNumber}`
+        data: {
+          queueId: queueResult.insertId,
+          customerId: finalCustomerId,
+          tokenNumber: tokenResult[0].token_number,
+          estimatedWaitTime: estimatedWaitTime,
+          position: positionResult[0]?.position || 1,
+          isNewCustomer: isNewCustomer
+        },
+        message: message
       });
       
     } catch (error) {
@@ -30,7 +100,7 @@ class QueueController {
       res.status(500).json({ error: error.message });
     }
   }
-  
+
   // Get queue status
   static async getQueueStatus(req, res) {
     try {
@@ -41,61 +111,31 @@ class QueueController {
       res.status(500).json({ error: error.message });
     }
   }
-  
+
   // Update queue status
   static async updateStatus(req, res) {
     try {
       const { id } = req.params;
       const { status } = req.body;
       
-      // Validate status
       if (!['waiting', 'called', 'served', 'cancelled'].includes(status)) {
         return res.status(400).json({ error: 'Invalid status' });
       }
       
-      // Update status in database
       const updated = await QueueModel.updateStatus(id, status);
       
-      // Emit socket events for real-time updates
       const io = req.app.get('io');
       if (io) {
-        // Get updated queue status
         const queueStatus = await QueueModel.getQueueStatus();
-        
-        // Broadcast queue update to all connected clients
         io.emit('queueUpdated', queueStatus);
         
-        // Notify specific customer when called
         if (status === 'called') {
           io.emit('customerCalled', { 
             customerId: updated.customer_id,
             tokenNumber: updated.token_number,
             name: updated.name,
-            message: 'Now it\'s your turn! Please proceed to the counter.'
+            message: 'Now it\'s your turn!'
           });
-          console.log(`🔔 Customer ${updated.customer_id} (${updated.name}) has been called!`);
-        }
-        
-        // Notify when served
-        if (status === 'served') {
-          io.emit('customerServed', { 
-            customerId: updated.customer_id,
-            tokenNumber: updated.token_number,
-            name: updated.name,
-            message: 'Thank you for visiting!'
-          });
-          console.log(`✅ Customer ${updated.customer_id} (${updated.name}) has been served!`);
-        }
-        
-        // Notify when cancelled
-        if (status === 'cancelled') {
-          io.emit('customerCancelled', { 
-            customerId: updated.customer_id,
-            tokenNumber: updated.token_number,
-            name: updated.name,
-            message: 'Queue cancelled.'
-          });
-          console.log(`❌ Customer ${updated.customer_id} (${updated.name}) cancelled.`);
         }
       }
       
@@ -110,7 +150,7 @@ class QueueController {
       res.status(500).json({ error: error.message });
     }
   }
-  
+
   // Get customer queue status
   static async getCustomerQueueStatus(req, res) {
     try {
@@ -134,7 +174,7 @@ class QueueController {
       res.status(500).json({ error: error.message });
     }
   }
-  
+
   // Get statistics
   static async getStats(req, res) {
     try {
@@ -145,7 +185,7 @@ class QueueController {
       res.status(500).json({ error: error.message });
     }
   }
-  
+
   // Get recent activity
   static async getRecentActivity(req, res) {
     try {
@@ -153,7 +193,6 @@ class QueueController {
       res.json(activity);
     } catch (error) {
       console.error('Error getting recent activity:', error);
-      // Return empty array if error
       res.json([]);
     }
   }

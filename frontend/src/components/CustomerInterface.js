@@ -1,48 +1,30 @@
-import React, { useState, useEffect, useRef } from "react";
-import axios from "axios";
-import { io } from "socket.io-client";
-import toast from "react-hot-toast";
-import {
-  FiUser,
-  FiMail,
-  FiPhone,
-  FiUsers,
-  FiClock,
-  FiCheckCircle,
-  FiBell,
-  FiArrowRight,
-  FiRefreshCw,
-  FiInfo,
-  FiMapPin,
-  FiClock as FiClockIcon,
-  FiTag,
-  FiTrendingUp,
-  FiAward,
-  FiStar,
-  FiGift,
-  FiHeart,
-  FiSmile,
-  FiCalendar,
-  FiHome,
-} from "react-icons/fi";
-import {
-  FaUtensils,
-  FaClock,
-  FaCheck,
-  FaBell as FaBellIcon,
-} from "react-icons/fa";
-import "./CustomerInterface.css";
+import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
+import { io } from 'socket.io-client';
+import toast from 'react-hot-toast';
+import { 
+  FiUser, FiMail, FiPhone, FiUsers, FiClock, FiCheckCircle, 
+  FiBell, FiArrowRight, FiRefreshCw, FiInfo, FiMapPin,
+  FiClock as FiClockIcon, FiTag, FiTrendingUp
+} from 'react-icons/fi';
+import { FaUtensils, FaClock, FaBell as FaBellIcon } from 'react-icons/fa';
+import './CustomerInterface.css';
 
-const API_URL = process.env.REACT_APP_API_URL;
-const socket = io(process.env.REACT_APP_BACKEND_URL);
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || 'http://localhost:5000';
 
+const socket = io(SOCKET_URL, {
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000
+});
 
 function CustomerInterface() {
   const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    party_size: 1,
+    name: '',
+    email: '',
+    phone: '',
+    party_size: 1
   });
   const [queueStatus, setQueueStatus] = useState(null);
   const [customerId, setCustomerId] = useState(null);
@@ -56,80 +38,75 @@ function CustomerInterface() {
 
   // Initialize audio
   useEffect(() => {
-    notificationSoundRef.current = new Audio("/notification.mp3");
+    notificationSoundRef.current = new Audio('/notification.mp3');
     notificationSoundRef.current.load();
-
+    
     return () => {
       isMounted.current = false;
     };
   }, []);
 
-  // Socket connection and listeners - Only set up once
+  // Socket connection and listeners
   useEffect(() => {
-    // Socket connection status
-    socket.on("connect", () => {
-      console.log("Socket connected");
+    socket.on('connect', () => {
+      console.log('Socket connected');
     });
 
-    socket.on("disconnect", () => {
-      console.log("Socket disconnected");
+    socket.on('disconnect', () => {
+      console.log('Socket disconnected');
     });
 
-    // Global queue updated listener
-    socket.on("queueUpdated", () => {
-      console.log("Queue updated event received");
+    socket.on('queueUpdated', () => {
+      console.log('Queue updated event received');
       if (customerIdRef.current) {
         fetchCustomerStatus(customerIdRef.current);
       }
     });
 
-    // Customer called listener
-    socket.on("customerCalled", (data) => {
-      console.log("Customer called event received:", data);
+    socket.on('customerCalled', (data) => {
+      console.log('Customer called event received:', data);
       const currentId = customerIdRef.current;
       if (currentId && data.customerId === parseInt(currentId)) {
         handleCustomerCalled(data);
       }
     });
 
-    // Customer served listener
-    socket.on("customerServed", (data) => {
-      console.log("Customer served event received:", data);
+    socket.on('customerServed', (data) => {
+      console.log('Customer served event received:', data);
       const currentId = customerIdRef.current;
       if (currentId && data.customerId === parseInt(currentId)) {
-        toast.success("You have been served! Thank you for visiting.", {
+        toast.success('You have been served! Thank you for visiting.', {
           duration: 5000,
-          icon: <FiCheckCircle size={24} />,
+          icon: <FiCheckCircle size={24} />
         });
         fetchCustomerStatus(currentId);
       }
     });
 
-    // Customer cancelled listener
-    socket.on("customerCancelled", (data) => {
-      console.log("Customer cancelled event received:", data);
+    socket.on('customerCancelled', (data) => {
+      console.log('Customer cancelled event received:', data);
       const currentId = customerIdRef.current;
       if (currentId && data.customerId === parseInt(currentId)) {
-        toast.error("Your queue has been cancelled.", {
-          duration: 5000,
+        toast.error('Your queue has been cancelled.', {
+          duration: 5000
         });
         handleNewQueue();
       }
     });
 
     return () => {
-      socket.off("connect");
-      socket.off("disconnect");
-      socket.off("queueUpdated");
-      socket.off("customerCalled");
-      socket.off("customerServed");
-      socket.off("customerCancelled");
+      socket.off('connect');
+      socket.off('disconnect');
+      socket.off('queueUpdated');
+      socket.off('customerCalled');
+      socket.off('customerServed');
+      socket.off('customerCancelled');
     };
   }, []);
 
   // Load saved customer on mount
   useEffect(() => {
-    const savedCustomerId = localStorage.getItem("customerId");
+    const savedCustomerId = localStorage.getItem('customerId');
     if (savedCustomerId) {
       setCustomerId(savedCustomerId);
       customerIdRef.current = savedCustomerId;
@@ -144,44 +121,39 @@ function CustomerInterface() {
 
   // Handle customer called event
   const handleCustomerCalled = (data) => {
-    console.log("Handling customer called");
+    console.log('Handling customer called');
     setShowCallNotification(true);
-    setQueueStatus((prev) => {
+    setQueueStatus(prev => {
       if (prev) {
         return {
           ...prev,
-          status: "called",
+          status: 'called'
         };
       }
       return prev;
     });
-
-    // Show toast notification
-    toast.success("Now it's your turn! Please proceed to the counter.", {
+    
+    toast.success('🔔 Now it\'s your turn! Please proceed to the counter.', {
       duration: 15000,
       icon: <FaBellIcon size={24} />,
       style: {
-        background: "#4CAF50",
-        color: "white",
-        fontSize: "16px",
-        padding: "20px",
-        borderRadius: "12px",
-        boxShadow: "0 8px 30px rgba(76, 175, 80, 0.4)",
-      },
+        background: '#4CAF50',
+        color: 'white',
+        fontSize: '16px',
+        padding: '20px',
+        borderRadius: '12px',
+        boxShadow: '0 8px 30px rgba(76, 175, 80, 0.4)'
+      }
     });
-
-    // Play notification sound
+    
     try {
       if (notificationSoundRef.current) {
-        notificationSoundRef.current
-          .play()
-          .catch((e) => console.log("Sound play error:", e));
+        notificationSoundRef.current.play().catch(e => console.log('Sound play error:', e));
       }
     } catch (e) {
-      console.log("Sound not available");
+      console.log('Sound not available');
     }
-
-    // Fetch latest status
+    
     if (customerIdRef.current) {
       fetchCustomerStatus(customerIdRef.current);
     }
@@ -191,41 +163,56 @@ function CustomerInterface() {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: name === "party_size" ? parseInt(value) || 1 : value,
+      [name]: name === 'party_size' ? parseInt(value) || 1 : value
     });
   };
 
+  // MAIN SUBMIT - Simple and Clean
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-
+    
     try {
-      const response = await axios.post(`${API_URL}/queue/add`, formData);
-
+      console.log('📝 Submitting form:', formData);
+      
+      // Step 1: Add to queue with all details
+      // Backend will handle: check phone -> create if new -> add to queue
+      const response = await axios.post(`${API_URL}/queue/add`, {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        party_size: formData.party_size
+      });
+      
+      console.log('✅ Queue response:', response.data);
+      
       if (response.data.success) {
+        // Simple success message - no welcome back or new customer
         toast.success(response.data.message);
+        
         const newCustomerId = response.data.data.customerId;
         setCustomerId(newCustomerId);
         customerIdRef.current = newCustomerId;
-        localStorage.setItem("customerId", newCustomerId.toString());
-
-        // First, set queue status with API data
+        localStorage.setItem('customerId', newCustomerId.toString());
+        
         setQueueStatus({
           tokenNumber: response.data.data.tokenNumber,
           estimatedWaitTime: response.data.data.estimatedWaitTime,
-          position: response.data.data.position || 1, // Use position from API response
-          status: "waiting",
+          position: response.data.data.position || 1,
+          status: 'waiting'
         });
         setShowForm(false);
         setShowCallNotification(false);
         setWaitTimeProgress(33);
-
-        // Then fetch latest status to confirm
+        
         await fetchCustomerStatus(newCustomerId);
       }
     } catch (error) {
-      toast.error(error.response?.data?.error || "Error adding to queue");
-      console.error("Error:", error);
+      console.error('❌ Error:', error);
+      console.error('❌ Response:', error.response?.data);
+      
+      const errorMsg = error.response?.data?.error || 'Error adding to queue';
+      toast.error(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -233,12 +220,10 @@ function CustomerInterface() {
 
   const fetchCustomerStatus = async (id) => {
     if (!id || !isMounted.current) return;
-
+    
     try {
-      console.log("Fetching customer status for ID:", id);
       const response = await axios.get(`${API_URL}/queue/customer/${id}`);
-      console.log("Customer status response:", response.data);
-
+      
       if (response.data.inQueue) {
         const status = response.data.status;
         const newStatus = {
@@ -246,21 +231,19 @@ function CustomerInterface() {
           position: response.data.position || 1,
           estimatedWaitTime: response.data.estimated_wait_time,
           status: status,
-          minutesWaited: response.data.minutes_waited || 0,
+          minutesWaited: response.data.minutes_waited || 0
         };
-
-        console.log("Setting queue status with position:", newStatus.position);
+        
         setQueueStatus(newStatus);
         setShowForm(false);
-
-        // Calculate progress
+        
         let progress = 0;
-        if (status === "waiting") progress = 33;
-        else if (status === "called") progress = 66;
-        else if (status === "served") progress = 100;
+        if (status === 'waiting') progress = 33;
+        else if (status === 'called') progress = 66;
+        else if (status === 'served') progress = 100;
         setWaitTimeProgress(progress);
-
-        if (status === "called") {
+        
+        if (status === 'called') {
           setShowCallNotification(true);
         } else {
           setShowCallNotification(false);
@@ -270,11 +253,11 @@ function CustomerInterface() {
         setShowForm(true);
         setShowCallNotification(false);
         setWaitTimeProgress(0);
-        localStorage.removeItem("customerId");
+        localStorage.removeItem('customerId');
         customerIdRef.current = null;
       }
     } catch (error) {
-      console.error("Error fetching status:", error);
+      console.error('Error fetching status:', error);
     }
   };
 
@@ -284,22 +267,21 @@ function CustomerInterface() {
     setShowCallNotification(false);
     setWaitTimeProgress(0);
     setFormData({
-      name: "",
-      email: "",
-      phone: "",
-      party_size: 1,
+      name: '',
+      email: '',
+      phone: '',
+      party_size: 1
     });
-    localStorage.removeItem("customerId");
+    localStorage.removeItem('customerId');
     setCustomerId(null);
     customerIdRef.current = null;
   };
 
-  // Auto-refresh status every 10 seconds (backup for socket)
+  // Auto-refresh status every 10 seconds
   useEffect(() => {
     let interval;
-    if (customerId && queueStatus?.status === "waiting" && isMounted.current) {
+    if (customerId && queueStatus?.status === 'waiting' && isMounted.current) {
       interval = setInterval(() => {
-        console.log("Auto-refresh status");
         fetchCustomerStatus(customerId);
       }, 10000);
     }
@@ -309,35 +291,27 @@ function CustomerInterface() {
   return (
     <div className="customer-container">
       <div className="customer-card">
-        {/* Header */}
         <div className="card-header">
           <div className="header-icon">
             <FaUtensils size={48} />
           </div>
-          <h2>
-            Welcome to <br />
-            <span className="highlight">Fine Dining</span>
-          </h2>
+          <h2>Welcome to <br /><span className="highlight">Fine Dining</span></h2>
           <p className="subtitle">Join the queue and get your table</p>
         </div>
-
-        {/* Call Notification */}
+        
         {showCallNotification && (
           <div className="call-notification">
             <div className="notification-icon">
-              <FaBellIcon color="white" size={36} />
+              <FaBellIcon color='white' size={36} />
             </div>
             <div className="notification-content">
               <h3>Now it's your turn!</h3>
               <p>Please proceed to the counter with your token</p>
-              <div className="token-display-big">
-                #{queueStatus?.tokenNumber}
-              </div>
+              <div className="token-display-big">#{queueStatus?.tokenNumber}</div>
             </div>
           </div>
         )}
-
-        {/* Form */}
+        
         {showForm && (
           <form onSubmit={handleSubmit} className="customer-form">
             <div className="form-group">
@@ -355,7 +329,7 @@ function CustomerInterface() {
                 disabled={isSubmitting}
               />
             </div>
-
+            
             <div className="form-group">
               <label>
                 <FiMail className="input-icon" />
@@ -371,7 +345,7 @@ function CustomerInterface() {
                 disabled={isSubmitting}
               />
             </div>
-
+            
             <div className="form-group">
               <label>
                 <FiPhone className="input-icon" />
@@ -387,7 +361,7 @@ function CustomerInterface() {
                 disabled={isSubmitting}
               />
             </div>
-
+            
             <div className="form-group">
               <label>
                 <FiUsers className="input-icon" />
@@ -405,15 +379,15 @@ function CustomerInterface() {
               />
               <small className="input-hint">Minimum 1 person</small>
             </div>
-
-            <button
-              type="submit"
+            
+            <button 
+              type="submit" 
               className="btn-submit"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
                 <>
-                  <span className="spinner"></span> Joining Queue...
+                  <span className="spinner"></span> Joining...
                 </>
               ) : (
                 <>
@@ -423,8 +397,7 @@ function CustomerInterface() {
             </button>
           </form>
         )}
-
-        {/* Queue Status */}
+        
         {queueStatus && !showForm && (
           <div className="queue-status">
             <h3>
@@ -437,26 +410,28 @@ function CustomerInterface() {
                   <span className="label">
                     <FiTag size={14} /> Token
                   </span>
-                  <span className="value token-number">
-                    #{queueStatus.tokenNumber}
+                  <span className="value token-number">#{queueStatus.tokenNumber}</span>
+                </div>
+                <div className="status-item position-item">
+                  <span className="label">
+                    <FiMapPin size={14} /> Position
+                  </span>
+                  <span className="value">
+                    {queueStatus.position || 1}
                   </span>
                 </div>
                 <div className="status-item time-item">
                   <span className="label">
                     <FiClockIcon size={14} /> EST Wait
                   </span>
-                  <span className="value">
-                    {queueStatus.estimatedWaitTime} min
-                  </span>
+                  <span className="value">{queueStatus.estimatedWaitTime} min</span>
                 </div>
                 {queueStatus.minutesWaited > 0 && (
                   <div className="status-item waited-item">
                     <span className="label">
-                      <FaClock size={14} /> Waited
+                      <FaClock size={14} /> Already Waited
                     </span>
-                    <span className="value">
-                      {queueStatus.minutesWaited} min
-                    </span>
+                    <span className="value">{queueStatus.minutesWaited} min</span>
                   </div>
                 )}
                 <div className="status-item status-item-full">
@@ -464,57 +439,47 @@ function CustomerInterface() {
                     <FiTrendingUp size={14} /> Status
                   </span>
                   <span className={`status-badge ${queueStatus.status}`}>
-                    {queueStatus.status === "waiting" && (
-                      <>
-                        <FiClock size={14} /> Waiting...
-                      </>
+                    {queueStatus.status === 'waiting' && (
+                      <><FiClock size={14} /> Waiting...</>
                     )}
-                    {queueStatus.status === "called" && (
-                      <>
-                        <FiBell size={14} /> Now it's your turn!
-                      </>
+                    {queueStatus.status === 'called' && (
+                      <><FiBell size={14} /> Now it's your turn!</>
                     )}
-                    {queueStatus.status === "served" && (
-                      <>
-                        <FiCheckCircle size={14} /> Served
-                      </>
+                    {queueStatus.status === 'served' && (
+                      <><FiCheckCircle size={14} /> Served</>
                     )}
-                    {queueStatus.status === "cancelled" && (
-                      <>
-                        <FiUser size={14} /> Cancelled
-                      </>
+                    {queueStatus.status === 'cancelled' && (
+                      <><FiUser size={14} /> Cancelled</>
                     )}
                   </span>
                 </div>
               </div>
+              
               <div className="status-progress">
                 <div className="progress-track">
-                  <div
+                  <div 
                     className={`progress-fill ${queueStatus.status}`}
                     style={{ width: `${waitTimeProgress}%` }}
                   ></div>
                 </div>
                 <div className="progress-labels">
-                  <span
-                    className={`step ${waitTimeProgress >= 33 ? "active" : ""}`}
-                  >
+                  <span className={`step ${waitTimeProgress >= 33 ? 'active' : ''}`}>
                     <span className="step-dot"></span> Waiting
                   </span>
-                  <span
-                    className={`step ${waitTimeProgress >= 66 ? "active" : ""}`}
-                  >
+                  <span className={`step ${waitTimeProgress >= 66 ? 'active' : ''}`}>
                     <span className="step-dot"></span> Called
                   </span>
-                  <span
-                    className={`step ${waitTimeProgress >= 100 ? "active" : ""}`}
-                  >
+                  <span className={`step ${waitTimeProgress >= 100 ? 'active' : ''}`}>
                     <span className="step-dot"></span> Served
                   </span>
                 </div>
               </div>
             </div>
-
-            <button className="btn-new-queue" onClick={handleNewQueue}>
+            
+            <button 
+              className="btn-new-queue"
+              onClick={handleNewQueue}
+            >
               Join Queue Again
             </button>
           </div>

@@ -250,6 +250,38 @@ class QueueModel {
       throw error;
     }
   }
+
+  // Get customer queue history
+  static async getCustomerQueueHistory(customerId, days = 30) {
+    try {
+      const [rows] = await db.query(`
+        SELECT 
+          q.id,
+          q.token_number,
+          q.status,
+          q.check_in_time,
+          q.called_time,
+          q.served_time,
+          q.estimated_wait_time,
+          TIMESTAMPDIFF(MINUTE, q.check_in_time, COALESCE(q.served_time, NOW())) as wait_duration,
+          CASE 
+            WHEN q.status = 'served' THEN 'Served'
+            WHEN q.status = 'called' THEN 'Called'
+            WHEN q.status = 'waiting' THEN 'Waiting'
+            WHEN q.status = 'cancelled' THEN 'Cancelled'
+            ELSE 'Unknown'
+          END as status_label
+        FROM queue q
+        WHERE q.customer_id = ? 
+        AND q.check_in_time >= DATE_SUB(NOW(), INTERVAL ? DAY)
+        ORDER BY q.check_in_time DESC
+      `, [customerId, days]);
+      
+      return rows;
+    } catch (error) {
+      throw error;
+    }
+  }
 }
 
 module.exports = QueueModel;

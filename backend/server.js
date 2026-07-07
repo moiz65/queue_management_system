@@ -9,6 +9,7 @@ require('dotenv').config();
 const queueRoutes = require('./routes/queueRoutes');
 const customerRoutes = require('./routes/customerRoutes');
 const authRoutes = require('./routes/authRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
@@ -43,6 +44,7 @@ app.set('io', io);
 app.use('/api/queue', queueRoutes);
 app.use('/api/customers', customerRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 
 // Error handling middleware
