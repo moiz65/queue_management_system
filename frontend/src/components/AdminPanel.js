@@ -1230,130 +1230,6 @@ function AdminPanel() {
                         </span>
                       </div>
                     </div>
-
-                    {/* Status Distribution - FIXED: Shows 0 when empty */}
-                    {/* <div className="analytics-card chart-card">
-                      <h4>Queue Status Distribution</h4>
-                      <ResponsiveContainer width="100%" height={200}>
-                        <PieChart>
-                          <Pie
-                            data={getStatusDistributionData()}
-                            cx="50%"
-                            cy="50%"
-                            labelLine={false}
-                            label={({ name, percent }) =>
-                              `${name} ${(percent * 100).toFixed(0)}%`
-                            }
-                            outerRadius={70}
-                            dataKey="value"
-                          >
-                            {getStatusDistributionData().map((entry, index) => (
-                              <Cell
-                                key={`cell-${index}`}
-                                fill={COLORS[index % COLORS.length]}
-                              />
-                            ))}
-                          </Pie>
-                          <Tooltip
-                            contentStyle={{
-                              background: "white",
-                              borderRadius: "8px",
-                              border: "none",
-                              boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                            }}
-                          />
-                        </PieChart>
-                      </ResponsiveContainer>
-                      <div
-                        className="chart-insight"
-                        style={{ textAlign: "center" }}
-                      >
-                        <span className="insight-icon">📋</span>
-                        <span>
-                          Total in queue:{" "}
-                          {getStatusCount("waiting") +
-                            getStatusCount("called") +
-                            getStatusCount("served") +
-                            getStatusCount("cancelled")}
-                        </span>
-                      </div>
-                    </div> */}
-
-                    {/* Quick Stats - FIXED */}
-                    {/* <div className="analytics-card quick-stats-card">
-                      <h4>Quick Stats</h4>
-                      <div className="quick-stats-grid">
-                        <div className="quick-stat">
-                          <span className="qs-icon">⏱️</span>
-                          <div>
-                            <span className="qs-label">Avg. Wait Time</span>
-                            <span className="qs-value">
-                              {stats?.avg_wait_time || 0} min
-                            </span>
-                          </div>
-                        </div>
-                        <div className="quick-stat">
-                          <span className="qs-icon">👥</span>
-                          <div>
-                            <span className="qs-label">Avg. Party Size</span>
-                            <span className="qs-value">
-                              {avgPartySizeCalculated > 0
-                                ? avgPartySizeCalculated
-                                : "N/A"}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="quick-stat">
-                          <span className="qs-icon">📅</span>
-                          <div>
-                            <span className="qs-label">Today's Date</span>
-                            <span className="qs-value">
-                              {new Date().toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="quick-stat">
-                          <span className="qs-icon">🔄</span>
-                          <div>
-                            <span className="qs-label">Total Served</span>
-                            <span className="qs-value">
-                              {stats?.served_today || 0}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div> */}
-
-                    {/* Recent Activity - HIDDEN SECTION (Commented out) */}
-                    {/* <div className="analytics-card activity-feed-card">
-                      <h4>Recent Activity Feed</h4>
-                      <div className="activity-feed">
-                        {recentActivity.length > 0 ? (
-                          recentActivity.slice(0, 5).map((activity, index) => (
-                            <div
-                              key={activity.id || index}
-                              className="feed-item"
-                            >
-                              <span className="feed-icon">
-                                {getActivityIcon(activity.type)}
-                              </span>
-                              <div className="feed-content">
-                                <span className="feed-text">
-                                  {activity.action}
-                                </span>
-                                <span className="feed-time">
-                                  {activity.time}
-                                </span>
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="feed-empty">
-                            <p>No recent activity</p>
-                          </div>
-                        )}
-                      </div>
-                    </div> */}
                   </div>
                 </div>
               )}
@@ -1457,7 +1333,15 @@ function AdminPanel() {
 
       {/* Edit Customer Modal */}
       {showEditModal && editingCustomer && (
-        <div className="modal-overlay" onClick={() => setShowEditModal(false)}>
+        <div
+          className="modal-overlay"
+          onClick={(e) => {
+            // Only close if clicking on the overlay itself, not its children
+            if (e.target === e.currentTarget) {
+              setShowEditModal(false);
+            }
+          }}
+        >
           <div className="modal-content premium-modal edit-modal">
             <div className="modal-header">
               <h3>
