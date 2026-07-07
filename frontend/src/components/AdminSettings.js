@@ -27,6 +27,8 @@ function AdminSettings({ onClose }) {
   const [loading, setLoading] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -83,7 +85,7 @@ function AdminSettings({ onClose }) {
       return;
     }
 
-    setLoading(true);
+    setSavingProfile(true);
     try {
       const token = localStorage.getItem('token');
       const updateData = {
@@ -115,27 +117,60 @@ function AdminSettings({ onClose }) {
       userData.email = profile.email;
       localStorage.setItem('user', JSON.stringify(userData));
 
+      // Close popup after successful update
+      setTimeout(() => {
+        onClose();
+      }, 1000);
+
     } catch (error) {
       toast.error(error.response?.data?.error || 'Failed to update profile');
     } finally {
-      setLoading(false);
+      setSavingProfile(false);
     }
   };
 
+  // ✅ FIXED: Separate function for settings save
   const handleSaveSettings = async () => {
-    setLoading(true);
+    setSavingSettings(true);
     try {
       const token = localStorage.getItem('token');
-      await axios.put(`${API_URL}/auth/settings`, { settings }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      
+      console.log('📝 Saving settings:', settings);
+      
+      const response = await axios.put(`${API_URL}/auth/settings`, 
+        { settings }, 
+        {
+          headers: { Authorization: `Bearer ${token}` }
+        }
+      );
 
-      toast.success('Settings updated successfully');
+      console.log('✅ Settings saved:', response.data);
+      
+      toast.success('Settings updated successfully!');
+      
+      // ✅ Close popup after successful save
+      setTimeout(() => {
+        onClose();
+      }, 1000);
+
     } catch (error) {
+      console.error('❌ Error saving settings:', error);
+      console.error('❌ Error response:', error.response?.data);
       toast.error(error.response?.data?.error || 'Failed to update settings');
     } finally {
-      setLoading(false);
+      setSavingSettings(false);
     }
+  };
+
+  // ✅ Combined save function - saves both profile and settings
+  const handleSaveAll = async () => {
+    // First save profile if there are changes
+    if (profile.full_name || profile.email || passwordData.currentPassword) {
+      await handleSaveProfile();
+    }
+    
+    // Then save settings
+    await handleSaveSettings();
   };
 
   return (
@@ -305,10 +340,17 @@ function AdminSettings({ onClose }) {
           </button>
           <button 
             className="btn-save" 
-            onClick={handleSaveProfile}
-            disabled={loading}
+            onClick={handleSaveSettings}
+            disabled={savingSettings}
           >
-            <FiSave size={18} /> {loading ? 'Saving...' : 'Save Changes'}
+            <FiSave size={18} /> {savingSettings ? 'Saving Settings...' : 'Save Settings'}
+          </button>
+          <button 
+            className="btn-save-all" 
+            onClick={handleSaveAll}
+            disabled={savingProfile || savingSettings}
+          >
+            <FiSave size={18} /> {savingProfile || savingSettings ? 'Saving All...' : 'Save All'}
           </button>
         </div>
       </div>
