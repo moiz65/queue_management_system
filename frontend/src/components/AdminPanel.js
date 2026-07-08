@@ -637,7 +637,7 @@ function AdminPanel() {
         {/* Header */}
         <div className="header">
           <div className="header-left">
-            <h1>Welcome to {restaurantSettings.company_name || "QueuePro"}.</h1>
+            <h1>Welcome to {restaurantSettings.company_name || "MyCompany"}.</h1>
           </div>
           <div className="header-right">
             <span className="live-badge">
