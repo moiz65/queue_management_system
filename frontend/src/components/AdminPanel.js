@@ -43,8 +43,9 @@ import {
   FiTrash2,
   FiX,
   FiSave,
+  FiCoffee,
 } from "react-icons/fi";
-import { FaUsers, FaCrown, FaRegClock } from "react-icons/fa";
+import { FaUsers, FaCrown, FaRegClock, FaUtensils } from "react-icons/fa";
 import AdminSettings from "./AdminSettings";
 import "./AdminPanel.css";
 
@@ -93,6 +94,14 @@ function AdminPanel() {
   });
   const [showEditModal, setShowEditModal] = useState(false);
 
+  // ✅ NEW: Restaurant settings state
+  const [restaurantSettings, setRestaurantSettings] = useState({
+    company_name: "QueuePro",
+    company_logo: "",
+    timezone: "Asia/Karachi",
+    notification_email: "",
+  });
+
   // Analytics Data States
   const [peakHoursData, setPeakHoursData] = useState([]);
   const [weeklyTrendData, setWeeklyTrendData] = useState([]);
@@ -116,6 +125,7 @@ function AdminPanel() {
     }
 
     fetchAllData();
+    fetchRestaurantSettings(); // ✅ Fetch restaurant settings
 
     socket.on("queueUpdated", () => {
       fetchAllData();
@@ -125,6 +135,27 @@ function AdminPanel() {
       socket.off("queueUpdated");
     };
   }, []);
+
+  // ✅ NEW: Fetch restaurant settings
+  const fetchRestaurantSettings = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await axios.get(`${API_URL}/auth/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.data && response.data.settings) {
+        setRestaurantSettings({
+          company_name: response.data.settings.company_name || "QueuePro",
+          company_logo: response.data.settings.company_logo || "",
+          timezone: response.data.settings.timezone || "Asia/Karachi",
+          notification_email: response.data.settings.notification_email || "",
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching restaurant settings:", error);
+    }
+  };
 
   const fetchAllData = async () => {
     await Promise.all([
@@ -142,7 +173,6 @@ function AdminPanel() {
       setQueueData(response.data);
       setLoading(false);
 
-      // Update daily stats with queue data
       setDailyStats((prev) => ({
         ...prev,
         waiting: response.data?.totalWaiting || 0,
@@ -178,7 +208,6 @@ function AdminPanel() {
 
   const fetchAnalyticsData = async () => {
     try {
-      // Add date range parameter to API call
       const peakResponse = await axios.get(`${API_URL}/analytics/peak-hours`, {
         params: { range: selectedDateRange },
       });
@@ -194,7 +223,6 @@ function AdminPanel() {
       const weeklyData = weeklyResponse.data || generateWeeklyTrendData();
       setWeeklyTrendData(weeklyData);
 
-      // Apply filter
       applyDateFilter(peakData, weeklyData);
     } catch (error) {
       console.error("Error fetching analytics data:", error);
@@ -206,11 +234,9 @@ function AdminPanel() {
     }
   };
 
-  // Calculate Avg Party Size from queue data (customers who actually visited)
   const calculateAvgPartySize = () => {
     if (!queueData?.queue || queueData.queue.length === 0) return 0;
 
-    // Only count customers who have checked in (waiting, called, served)
     const activeCustomers = queueData.queue.filter(
       (c) =>
         c.status === "waiting" ||
@@ -227,28 +253,23 @@ function AdminPanel() {
     return Math.round(totalPartySize / activeCustomers.length);
   };
 
-  // Apply date filter to analytics data
   const applyDateFilter = (peakData, weeklyData) => {
     let filteredPeak = [...peakData];
 
     switch (selectedDateRange) {
       case "today":
-        // Filter for today's hours (9AM to 8PM)
         filteredPeak = peakData.filter((d) => {
           const hour = parseInt(d.hour);
           return hour >= 9 && hour <= 20;
         });
         break;
       case "week":
-        // Show last 7 days
         filteredPeak = peakData.slice(0, 7);
         break;
       case "month":
-        // Show last 30 days (aggregated)
         filteredPeak = peakData;
         break;
       case "quarter":
-        // Show last 90 days
         filteredPeak = peakData;
         break;
       default:
@@ -408,14 +429,12 @@ function AdminPanel() {
     return queueData?.queue?.filter((c) => c.status === status).length || 0;
   };
 
-  // Get dynamic status distribution data
   const getStatusDistributionData = () => {
     const waiting = getStatusCount("waiting");
     const called = getStatusCount("called");
     const served = getStatusCount("served");
     const cancelled = getStatusCount("cancelled");
 
-    // Return actual values, even if all are 0
     return [
       { name: "Waiting", value: waiting || 0 },
       { name: "Called", value: called || 0 },
@@ -520,30 +539,24 @@ function AdminPanel() {
     }
   };
 
-  // Handle date range change - NOW WORKING
   const handleDateRangeChange = (e) => {
     const value = e.target.value;
     setSelectedDateRange(value);
 
-    // Apply filter to data
     let filteredPeak = [...peakHoursData];
     let filteredWeekly = [...weeklyTrendData];
 
     switch (value) {
       case "today":
-        // Show only today's data (first 8-10 entries)
         filteredPeak = peakHoursData.slice(0, 10);
         break;
       case "week":
-        // Show weekly data
         filteredPeak = peakHoursData;
         break;
       case "month":
-        // Show monthly data (aggregated)
         filteredPeak = peakHoursData;
         break;
       case "quarter":
-        // Show quarterly data
         filteredPeak = peakHoursData;
         break;
       default:
@@ -552,8 +565,6 @@ function AdminPanel() {
 
     setFilteredPeakHours(filteredPeak);
     setFilteredWeeklyTrend(filteredWeekly);
-
-    // Refresh analytics with new filter
     fetchAnalyticsData();
   };
 
@@ -566,7 +577,6 @@ function AdminPanel() {
     );
   }
 
-  // Calculate avg party size from queue data
   const avgPartySizeCalculated = calculateAvgPartySize();
 
   return (
@@ -575,8 +585,11 @@ function AdminPanel() {
       <div className="sidebar">
         <div className="sidebar-header">
           <div className="logo">
-            <span className="logo-icon">🍽️</span>
-            <span className="logo-text">QueuePro</span>
+            {/* ✅ Dynamic logo from database */}
+            <FaUtensils className="logo-icon" size={24} />
+            <span className="logo-text">
+              {restaurantSettings.company_name || "QueuePro"}
+            </span>
           </div>
         </div>
         <nav className="sidebar-nav">
@@ -624,10 +637,7 @@ function AdminPanel() {
         {/* Header */}
         <div className="header">
           <div className="header-left">
-            <h1>Good Morning 👋</h1>
-            <p className="header-subtitle">
-              Here's what's happening with your restaurant today
-            </p>
+            <h1>Welcome to {restaurantSettings.company_name || "QueuePro"}.</h1>
           </div>
           <div className="header-right">
             <span className="live-badge">
