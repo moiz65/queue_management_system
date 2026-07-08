@@ -108,7 +108,7 @@ function CustomerDisplay() {
       {/* Header */}
       <div className="display-header">
         <div className="header-left">
-          <h1>🍽️ Queue Display</h1>
+          <h1>Queue Display</h1>
           <span className="live-badge">
             <span className="live-dot"></span> LIVE
           </span>
